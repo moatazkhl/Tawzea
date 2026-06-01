@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "User": {
+      "title": "Entitlement Recipient",
+      "description": "Information about a person entitled to receive aid.",
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string", "description": "Full name of the recipient" },
+        "national_id": { "type": "string", "description": "National ID (unique)" },
+        "family_card": { "type": "string", "description": "Family card number (unique)" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "address": { "type": "string", "description": "Residential address" },
+        "notes": { "type": "string", "description": "Additional notes" },
+        "queue_index": { "type": "number", "description": "Global queue order index" },
+        "status": { "type": "string", "enum": ["waiting", "active", "delivered"], "description": "Current status in the queue" },
+        "last_delivered_at": { "type": "string", "format": "date-time", "description": "Timestamp of the last delivery" },
+        "created_at": { "type": "string", "format": "date-time", "description": "Registration timestamp" }
+      },
+      "required": ["full_name", "national_id", "family_card", "queue_index", "status"]
+    },
+    "Setting": {
+      "title": "Application Setting",
+      "description": "Global configuration and passwords.",
+      "type": "object",
+      "properties": {
+        "value": { "type": "string", "description": "The value of the setting" }
+      },
+      "required": ["value"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": { "$ref": "User" },
+      "description": "Collection of all recipients"
+    },
+    "settings": {
+      "schema": { "$ref": "Setting" },
+      "description": "System settings like passwords"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Role checks - we'll use a 'staff' collection for UID-based roles
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function getStaffData() {
+      return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isStaff() && getStaffData().role == 'admin';
+    }
+
+    function isDistributor() {
+      return isStaff() && (getStaffData().role == 'distributor' || getStaffData().role == 'admin');
+    }
+
+    // 1. Users Collection
+    match /users/{docId} {
+      // Citizens can read their registration status
+      allow read: if true; 
+
+      // Admin can create users for any campaign
+      allow create: if isAdmin() && isValidUser(incoming());
+
+      // Admin and Distributor can update users
+      allow update: if isDistributor() && isValidUser(incoming()) && (
+        // Admin full update
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasAny(['national_id', 'family_card', 'full_name', 'phone', 'address', 'notes', 'queue_index', 'status', 'campaign_id'])) ||
+        // Distributor can only update status and delivered_at and queue_index
+        (isDistributor() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'delivered_at', 'queue_index']))
+      );
+
+      // Admin can delete
+      allow delete: if isAdmin();
+    }
+
+    // 1.5. Campaigns Collection
+    match /campaigns/{campaignId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. Settings Collection
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 3. Staff Collection
+    match /staff/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Validation Helpers
+    function isValidUser(data) {
+      return data.full_name is string && data.full_name.size() <= 200 &&
+             data.national_id is string && data.national_id.size() == 11 &&
+             data.family_card is string && data.family_card.size() >= 5 &&
+             data.phone is string && data.phone.size() >= 10 &&
+             data.address is string && data.address.size() <= 500 &&
+             data.status in ['waiting', 'active', 'delivered'] &&
+             data.queue_index is number &&
+             (!('campaign_id' in data) || data.campaign_id is string);
+    }
+  }
+}

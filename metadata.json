@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Remix: نظام توزيع المستحقات - Entitlement Queue System",
+  "description": "نظام شامل لإدارة طوابير المستحقين وتوزيع المعونات باستخدام الرقم القومي ورموز QR.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
