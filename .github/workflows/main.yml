@@ -20,11 +20,19 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
 
-    - name: Build with Gradle
-      run: gradle assembleDebug
+    # خطوة هامة جداً لإعطاء صلاحية التنفيذ لملف الـ gradlew داخل السيرفر
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
+    # التعديل هنا: استخدام ./gradlew بدلاً من gradle
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
+
+    # رفع ملف الـ APK الناتج كـ Artifact لتحميله
     - name: Upload APK
+      uses: actions/actions-runner@v4 # تم تحديثها لضمان التوافق مع التغييرات الأخيرة إذا لزم الأمر
       uses: actions/upload-artifact@v4
       with:
         name: my-app-apk
-        path: "**/build/outputs/apk/debug/*.apk"
+        path: "app/build/outputs/apk/debug/*.apk" 
+
